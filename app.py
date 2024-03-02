@@ -35,9 +35,7 @@ def handle_message(user_input):
             add_message("Bunty", "Hello! Do you want to play the Monty Hall game? (Yes/No)")
             st.session_state["game_state"] = "waiting_for_game_start"
         else:
-            response = llm.predict(prompt=user_input, max_tokens=60, temperature=0.5)
-            response_text = ' '.join(response.split()[:20])  # Limit to 20 words
-            add_message("Bunty", response_text)
+            add_message("Bunty", "Sorry, I didn't catch that. Please say 'hi' to start.")
     elif st.session_state["game_state"] == "waiting_for_game_start":
         add_message("You", user_input)
         if user_input == "yes":
