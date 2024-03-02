@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from langchain.llms import OpenAI
 
-# Use the os module to read the environment variable for the API key
+# Assuming OPENAI_API_KEY is set as an environment variable for security reasons
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if OPENAI_API_KEY is None:
@@ -11,27 +11,30 @@ if OPENAI_API_KEY is None:
 
 llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
-st.title("ASK BUNTY")
+st.title("ChatGPT Clone")
 
+# Initialize or update the session state for storing messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-with st.chat_message("assistant"):
-    st.write("Hello 👋")
-
+# Display existing messages
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+    if message["role"] == "user":
+        st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+    else:
+        st.text_area("Assistant:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
 
-prompt = st.chat_input("Enter your message", on_enter=None, key="chat_input")
+# User input
+user_input = st.text_input("Enter your message", "")
 
-if prompt:
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# When the user submits a message
+if st.button("Send") and user_input:
+    # Display user message
+    st.session_state.messages.append({"role": "user", "content": user_input})
 
-    response = llm.predict(prompt)
-
-    with st.chat_message("assistant"):
-        st.markdown(response)
+    # Generate and display response
+    response = llm.predict(user_input)
     st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Clear the input box after sending the message
+    st.experimental_rerun()
