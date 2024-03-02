@@ -1,14 +1,9 @@
 import streamlit as st
-import os
 import random
 from langchain.llms import OpenAI
 
-# Assuming OPENAI_API_KEY is set as an environment variable for security reasons
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if OPENAI_API_KEY is None:
-    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
-    st.stop()
+# Assuming the OPENAI_API_KEY is securely set up in Streamlit's secrets or through another secure method
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
 llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
@@ -54,9 +49,9 @@ def handle_message(user_input):
 # Display existing messages with floating chat style
 for message in st.session_state.messages:
     if message["role"] == "user":
-        st.text_area("You:", value=message["content"], height=50, key=f"user_{st.session_state.messages.index(message)}", disabled=True, style={'border-radius': '15px', 'box-shadow': '2px 2px 10px 2px rgba(0, 0, 0, 0.1)', 'margin': '10px 50px 10px auto', 'padding': '10px', 'background-color': '#DCF8C6'})
+        st.text_area("You:", value=message["content"], height=50, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
     else:
-        st.text_area("Bunty:", value=message["content"], height=50, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True, style={'border-radius': '15px', 'box-shadow': '2px 2px 10px 2px rgba(0, 0, 0, 0.1)', 'margin': '10px auto 10px 50px', 'padding': '10px', 'background-color': '#E1E1E1'})
+        st.text_area("Bunty:", value=message["content"], height=50, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
 
 # User input
 user_input = st.text_input("Enter your message", "")
@@ -67,4 +62,4 @@ if st.button("Send") and user_input:
     handle_message(user_input)
 
     # Clear the input box after sending the message
-    st.experimental_rerun()
+    st.experimental
