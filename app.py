@@ -97,10 +97,10 @@ def handle_message(user_input):
         else:
             add_message("Bunty", "I'm sorry, I didn't catch that. Do you want to play the Monty Hall game again? (Yes/No)")
 
-# User input and message handling
-user_input = st.text_input("Say something to Bunty:", key="new_message")
-if user_input:
-    handle_message(user_input)
+# Chat interface
+with st.form("chat_form"):
+    user_input = st.text_input("Say something to Bunty:")
+    st.form_submit_button("Send")
 
 # Display messages
 for message in st.session_state["messages"]:
