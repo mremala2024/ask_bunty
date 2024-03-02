@@ -13,7 +13,7 @@ if not OPENAI_API_KEY or not ASSISTANT_ID:
 openai.api_key = OPENAI_API_KEY
 
 # Streamlit app
-st.title("Improved ChatGPT Clone")
+st.title("Ask Bunty")
 
 # Initialize session state for message history
 if "messages" not in st.session_state:
