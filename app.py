@@ -1,29 +1,52 @@
 import streamlit as st
 import openai
 
-# Load your API key from Streamlit's secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Assuming OPENAI_API_KEY is set as an environment variable for security reasons
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
-# Streamlit app layout
-st.title('Chat with Bunty!')
+if OPENAI_API_KEY is None:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY in your Streamlit secrets.")
+    st.stop()
 
-user_input = st.text_input("Say something to Bunty...")
+# Initialize OpenAI client with the API key
+openai.api_key = OPENAI_API_KEY
 
-if user_input:
-    # Prepare the conversation with the system's initial prompt and user's message
-    system_prompt = {
-        "role": "system",
-        "content": "Ask Bunty warmly welcomes kids as they enter the chat, greeting them in a friendly and inviting tone. It immediately offers them a choice to learn about games by playing along, guiding them through each step and explaining strategies to win. The first game introduced is the Monty Hall game.\n\nWhen a child expresses interest in playing a game, Ask Bunty explains the rules of the Monty Hall game in simple, kid-friendly language. It sets up the scenario of three doors, behind one of which is a prize, and the other two hide goats. The child is asked to choose a door. After their choice, one of the non-chosen doors with a goat behind it is revealed. The child is then given the option to stick with their original choice or switch to the other remaining door. Ask Bunty guides the child through this decision-making process, encouraging them to think about their choice and explaining the benefits of switching based on probability, but in an accessible way that doesn't overwhelm. The game concludes by revealing all doors, showing whether the child's final choice won the prize.\n\nThroughout the game, Ask Bunty maintains a supportive and encouraging tone, making the learning experience enjoyable. It uses the Monty Hall game as a fun introduction to basic probability and decision-making, providing tips and strategies to enhance understanding and engagement."
-    }
-    user_message = {
-        "role": "user",
-        "content": user_input
-    }
+st.title("Ask Bunty")
 
-    # API call to OpenAI with the conversation so far
+# Initialize or update the session state for storing messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display existing messages
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+    else:  # Assuming all other messages are from Bunty for simplicity
+        st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
+
+# User input
+user_input = st.text_input("Enter your message", "")
+
+# When the user submits a message
+if st.button("Send") and user_input:
+    # Append user message to the session state
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    # Prepare the conversation so far for the OpenAI API call
+    conversation = [
+        {
+            "role": "system",
+            "content": "Ask Bunty warmly welcomes kids as they enter the chat, greeting them in a friendly and inviting tone..."
+            # The content should include the initial system prompt and any other necessary context
+        },
+        *st.session_state.messages,  # Include all previous messages
+        {"role": "user", "content": user_input}  # Include the latest user message
+    ]
+
+    # Generate response from OpenAI
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[system_prompt, user_message],
+        messages=conversation,
         temperature=1,
         max_tokens=256,
         top_p=1,
@@ -31,5 +54,9 @@ if user_input:
         presence_penalty=0
     )
 
-    # Display the response
-    st.write(response.choices[0].message["content"])
+    # Append Bunty's (assistant's) response to the session state
+    bunty_response = response.choices[0].message["content"]
+    st.session_state.messages.append({"role": "Bunty", "content": bunty_response})
+
+    # Clear the input box after sending the message
+    st.experimental_rerun()
