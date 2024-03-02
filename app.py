@@ -51,12 +51,12 @@ def handle_message(user_input):
         response = llm.predict(user_input)
         st.session_state.messages.append({"role": "Bunty", "content": response})
 
-# Display existing messages
+# Display existing messages with floating chat style
 for message in st.session_state.messages:
     if message["role"] == "user":
-        st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+        st.text_area("You:", value=message["content"], height=50, key=f"user_{st.session_state.messages.index(message)}", disabled=True, style={'border-radius': '15px', 'box-shadow': '2px 2px 10px 2px rgba(0, 0, 0, 0.1)', 'margin': '10px 50px 10px auto', 'padding': '10px', 'background-color': '#DCF8C6'})
     else:
-        st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
+        st.text_area("Bunty:", value=message["content"], height=50, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True, style={'border-radius': '15px', 'box-shadow': '2px 2px 10px 2px rgba(0, 0, 0, 0.1)', 'margin': '10px auto 10px 50px', 'padding': '10px', 'background-color': '#E1E1E1'})
 
 # User input
 user_input = st.text_input("Enter your message", "")
