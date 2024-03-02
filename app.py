@@ -1,55 +1,53 @@
-import os
 import streamlit as st
-import openai
+import os
+from langchain.llms import OpenAI
 
-# Retrieve the OpenAI API key and Assistant ID from environment variables
+# Assuming OPENAI_API_KEY is set as an environment variable
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 
-if not OPENAI_API_KEY or not ASSISTANT_ID:
-    raise ValueError("API key or Assistant ID not found. Please set OPENAI_API_KEY and ASSISTANT_ID environment variables.")
+if OPENAI_API_KEY is None:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    st.stop()
 
-# Initialize OpenAI API
-openai.api_key = OPENAI_API_KEY
+llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
-# Streamlit app
-st.title("Ask Bunty")
+st.title("Ask Bunty About the Monty Hall Game")
 
-# Initialize session state for message history
+# Styling for chat messages
+st.markdown("""
+<style>
+.streamlit-text-area {
+    border: 2px solid #4CAF50;
+    border-radius: 20px;
+}
+.streamlit-input {
+    margin-bottom: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize or update the session state for storing messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
+# Display existing messages in a more interactive and styled manner
 for message in st.session_state.messages:
-    with st.container():
-        st.write(f"{message['role'].title()}: {message['content']}")
+    st.text_area(label=message["role"] + ":", value=message["content"], height=75, disabled=True, key=f"{message['role']}_{st.session_state.messages.index(message)}")
 
 # User input
-user_input = st.text_input("Enter your message:", key="user_input")
+user_input = st.text_input("Enter your message", "", key="user_input")
 
-# Send button
-send_button = st.button("Send")
+# When the user submits a message
+if st.button("Send") and user_input:
+    # Append user message to the session state
+    st.session_state.messages.append({"role": "You", "content": user_input})
 
-if send_button and user_input:
-    # Append user message to chat history
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    # Concatenate all previous messages to maintain context
+    conversation_context = "Let's discuss the Monty Hall game, a probability puzzle based on a game show scenario where you choose one of three doors, behind one of which is a car. The host, knowing what's behind the doors, opens another door revealing a goat. You then decide whether to stick with your initial choice or switch to the other unopened door. " + " ".join([msg["content"] for msg in st.session_state.messages if msg["role"] == "You"])
 
-    # Prepare messages for OpenAI Chat Completion
-    messages = [{"role": "system", "content": "The following is a conversation with an AI assistant."},
-                *st.session_state.messages]
+    # Generate and display response
+    response = llm.predict(conversation_context)
+    st.session_state.messages.append({"role": "Bunty", "content": response})
 
-    # Call OpenAI API with parameters aimed at improving response relevance
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        temperature=0.7,  # Adjust for more deterministic (lower) or creative (higher) responses
-        max_tokens=150,
-        assistant_id=ASSISTANT_ID
-    )
-
-    # Append assistant's response to chat history
-    if response.choices:
-        st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message["content"]})
-
-    # Rerun the Streamlit app to update the conversation
+    # Clear the input box and rerun to update the chat
     st.experimental_rerun()
