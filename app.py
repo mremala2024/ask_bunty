@@ -1,19 +1,27 @@
 import streamlit as st
 import os
-from langchain.llms import OpenAI
+import openai
 
-# Function to simulate responses based on user input
-def simulate_response(user_message):
-    # Example logic to simulate a response based on the user_message
-    # This should be replaced with your logic to generate responses
-    if "play" in user_message.lower():
-        return "Great! Let's play the Monty Hall game! Here's how it works..."
-    elif user_message.isdigit() and int(user_message) in [1, 2, 3]:
-        return "You've chosen a door. Now, I will reveal a door with a goat..."
-    elif "switch" in user_message.lower() or "stick" in user_message.lower():
-        return "Let's see if you won the prize!"
-    else:
-        return "Would you like to play a game or learn about probability?"
+# Load the OpenAI API key from an environment variable
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if OPENAI_API_KEY is None:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    st.stop()
+
+# Function to generate responses using OpenAI's API
+def generate_response_with_openai(user_message):
+    response = openai.Completion.create(
+      engine="text-davinci-003",  # You might want to update the engine if necessary
+      prompt=user_message,
+      temperature=0.7,
+      max_tokens=150,
+      top_p=1,
+      frequency_penalty=0,
+      presence_penalty=0,
+      stop=["\n"]
+    )
+    return response.choices[0].text.strip()
 
 # Main Streamlit app
 def main():
@@ -26,9 +34,9 @@ def main():
     # Display existing messages
     for message in st.session_state.messages:
         if message["role"] == "user":
-            st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+            st.text_area("You:", value=message["content"], height=100, key=f"user_{message['content']}", disabled=True)
         else:
-            st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
+            st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{message['content']}", disabled=True)
 
     # User input
     user_input = st.text_input("Enter your message", "")
@@ -38,11 +46,14 @@ def main():
         # Display user message
         st.session_state.messages.append({"role": "user", "content": user_input})
 
-        # Simulate and display response
-        response = simulate_response(user_input)  # This line simulates generating a response
-        st.session_state.messages.append({"role": "Bunty", "content": response})
+        # Call OpenAI API to generate and display response
+        if OPENAI_API_KEY:  # Ensure API key is available
+            response = generate_response_with_openai(user_input)
+            st.session_state.messages.append({"role": "Bunty", "content": response})
+        else:
+            st.error("OpenAI API key not set. Please check your environment variables.")
 
-        # Clear the input box after sending the message
+        # Clear the input box after sending the message by rerunning the app
         st.experimental_rerun()
 
 if __name__ == "__main__":
