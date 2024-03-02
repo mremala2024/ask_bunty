@@ -1,60 +1,54 @@
 import streamlit as st
-import random
-import openai
+from langchain.llms import OpenAI
 
-# Assuming your OpenAI API key is stored in Streamlit's secrets
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-openai.api_key = OPENAI_API_KEY
+# Load the OpenAI API key, assuming it's set as an environment variable
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else None
 
-# Custom CSS for comic-style font
-st.markdown("""
-<style>
-    html, body, [class*="st-"] {
-    font-family: 'Comic Neue', 'Comic Sans MS', cursive !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+if OPENAI_API_KEY is None:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY in your Streamlit secrets.")
+    st.stop()
 
-# Initialize session states
-if 'stage' not in st.session_state:
-    st.session_state.stage = "welcome"
+llm = OpenAI(openai_api_key=OPENAI_API_KEY)
+
+st.title("Ask Bunty")
+
+# Initialize or update the session state for storing messages and game state
+if "messages" not in st.session_state:
     st.session_state.messages = []
+    st.session_state.game_state = "init"
 
-# Function to display chat
-def display_chat():
-    for message in st.session_state.messages:
-        if message["sender"] == "user":
-            st.text_area("", value=message["text"], height=40, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
-        else:
-            st.text_area("", value=message["text"], height=80, key=f"bunty_{st.session_state.messages.index(message)}", disabled=True)
-
-# Function to handle Monty Hall game logic or general queries
-def handle_query(query):
-    if st.session_state.stage == "welcome":
-        st.session_state.messages.append({"sender": "bunty", "text": "Hi! I'm Bunty. Do you want to play the Monty Hall Game? (yes/no)"})
-        st.session_state.stage = "ask_play"
-    # Add more conditions here for each stage of the Monty Hall game
-    # For non-game related queries, use OpenAI's API to get responses
+def handle_message(user_input):
+    # Check the current state of the conversation/game and respond accordingly
+    if st.session_state.game_state == "init":
+        st.session_state.messages.append({"role": "Bunty", "content": "Hello, I'm Bunty! Do you want to play the Monty Hall game? (Yes/No)"})
+        st.session_state.game_state = "waiting_for_game_start"
+    elif user_input.strip().lower() == "yes" and st.session_state.game_state == "waiting_for_game_start":
+        st.session_state.messages.append({"role": "Bunty", "content": "Great! Choose a door: 1, 2, or 3."})
+        st.session_state.game_state = "choosing_door"
+    # Insert additional game logic here
     else:
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=query,
-            temperature=0.5,
-            max_tokens=100,
-            top_p=1.0,
-            frequency_penalty=0.0,
-            presence_penalty=0.0
-        )
-        st.session_state.messages.append({"sender": "bunty", "text": response.choices[0].text.strip()})
+        # For non-game related questions or if game state doesn't match any known condition,
+        # use OpenAI to generate a response.
+        response = llm.predict(user_input)
+        st.session_state.messages.append({"role": "Bunty", "content": response})
+
+# Display existing messages
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+    else:  # Bunty's messages
+        st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
 
 # User input
-user_input = st.text_input("Say something to Bunty...", key="user_input")
+user_input = st.text_input("Enter your message", "")
 
-# Process input
-if user_input:
-    st.session_state.messages.append({"sender": "user", "text": user_input})
-    handle_query(user_input)
-    st.session_state.user_input = ""  # Clear the input box after processing
+# When the user submits a message
+if st.button("Send") and user_input:
+    # Display user message
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    
+    # Handle the message based on game state or forward to OpenAI
+    handle_message(user_input)
+
+    # Clear the input box after sending the message
     st.experimental_rerun()
-
-display_chat()
