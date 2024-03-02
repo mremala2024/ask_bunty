@@ -1,7 +1,9 @@
+# .streamlit/config.toml
+
 [theme]
 base = "light"
-primaryColor = "#FF971C"  # Bright orange for primary actions
-backgroundColor = "#FFF899"  # Light yellow for background
-secondaryBackgroundColor = "#FFD36E"  # Soft orange for secondary backgrounds
-textColor = "#005F99"  # Deep sky blue for text
+primaryColor = "#FF6347"  # Tomato
+backgroundColor = "#FFFACD"  # LemonChiffon
+secondaryBackgroundColor = "#F0E68C"  # Khaki
+textColor = "#4B0082"  # Indigo
 font = "sans serif"
