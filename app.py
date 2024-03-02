@@ -11,7 +11,7 @@ if OPENAI_API_KEY is None:
 
 llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
-st.title("ChatGPT Clone")
+st.title("Ask Bunty")
 
 # Initialize or update the session state for storing messages
 if "messages" not in st.session_state:
@@ -22,7 +22,7 @@ for message in st.session_state.messages:
     if message["role"] == "user":
         st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
     else:
-        st.text_area("Assistant:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
+        st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
 
 # User input
 user_input = st.text_input("Enter your message", "")
@@ -34,7 +34,7 @@ if st.button("Send") and user_input:
 
     # Generate and display response
     response = llm.predict(user_input)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.messages.append({"role": "Bunty", "content": response})
 
     # Clear the input box after sending the message
     st.experimental_rerun()
