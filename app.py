@@ -1,6 +1,7 @@
 import streamlit as st
 import openai
-
+from openai import OpenAI
+client = OpenAI()
 # Fetch the OpenAI API key from Streamlit's secrets
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
@@ -62,7 +63,7 @@ if st.button("Send") and user_input:
     conversation.append({"role": "user", "content": user_input})
 
     # Generate response from OpenAI
-    response = openai.Completion.create(
+    response = client.completions.create(
         model="gpt-3.5-turbo",
         prompt={"messages": conversation},  # Ensure the prompt format aligns with API expectations
         temperature=1,
