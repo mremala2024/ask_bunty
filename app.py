@@ -78,4 +78,9 @@ for message in st.session_state.messages:
 user_input = st.text_input("Enter your message", "", key="user_input")
 
 # When the user submits a message
-if user_input and st.session_state.stage != "end
+if user_input and st.session_state.stage != "end":
+    # Append user message to the session state
+    st.session_state.messages.append({"role": "You", "content": user_input})
+    monty_hall_game(user_input)
+    # Clear the input box and rerun to update the chat
+    st.experimental_rerun()
