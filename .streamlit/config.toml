@@ -1,4 +1,4 @@
-
+[theme]
 base = "light"
 primaryColor = "#FF971C"  # Bright orange for primary actions
 backgroundColor = "#FFF899"  # Light yellow for background
