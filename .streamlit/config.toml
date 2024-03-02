@@ -1,9 +1,7 @@
-# .streamlit/config.toml
 
-[theme]
-base="light"
-primaryColor="#FF6347"
-backgroundColor="#FFFACD"
-secondaryBackgroundColor="#F0E68C"
-textColor="#4B0082"
-font="sans serif"
+base = "light"
+primaryColor = "#FF971C"  # Bright orange for primary actions
+backgroundColor = "#FFF899"  # Light yellow for background
+secondaryBackgroundColor = "#FFD36E"  # Soft orange for secondary backgrounds
+textColor = "#005F99"  # Deep sky blue for text
+font = "sans serif"
