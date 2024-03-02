@@ -1,67 +1,47 @@
 import streamlit as st
-import random
 from langchain.llms import OpenAI
+import random
 
-# Assuming OPENAI_API_KEY is set in Streamlit's secrets for security reasons
+# Assuming the OpenAI API key is securely configured
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-
 llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
 st.title("Ask Bunty")
 
-# Initialize or update the session state for storing messages, game state, and game details
+# Initialize or update the session state for storing messages, game state, and input counter
 if "messages" not in st.session_state:
-    st.session_state["messages"] = []
-    st.session_state["game_state"] = "init"
-    st.session_state["chosen_door"] = None
-    st.session_state["goat_door"] = None
-    st.session_state["car_door"] = None
+    st.session_state.messages = []
+    st.session_state.game_state = "init"
+    st.session_state.input_counter = 0  # Counter to ensure text_input is cleared after each submission
 
-# Function to handle user messages and game logic
 def handle_message(user_input):
     user_input = user_input.strip().lower()
-    game_response = ""
 
-    if st.session_state.game_state == "init":
-        game_response = "Hello, I'm Bunty! Do you want to play the Monty Hall game? (Yes/No)"
-        st.session_state.game_state = "waiting_for_game_start"
+    # Your existing game logic here
 
-    elif user_input == "yes" and st.session_state.game_state == "waiting_for_game_start":
-        game_response = "Great! Choose a door: 1, 2, or 3."
-        st.session_state.game_state = "choosing_door"
+    # Example: Process a non-game related question through LLM
+    # Replace this logic with the full implementation as needed
+    if st.session_state.game_state == "waiting_for_non_game_response":
+        response = llm.predict(prompt=user_input, model="text-davinci-003", temperature=0.7)
+        st.session_state.messages.append({"role": "Bunty", "content": response['completions'][0]['data']['text']})
 
-    elif user_input in ["1", "2", "3"] and st.session_state.game_state == "choosing_door":
-        chosen_door = int(user_input)
-        car_door = random.randint(1, 3)
-        goat_door = next(door for door in [1, 2, 3] if door != chosen_door and door != car_door)
-        game_response = f"Door {goat_door} has a goat behind it. Do you want to switch your choice? (Yes/No)"
-        st.session_state.update({"chosen_door": chosen_door, "goat_door": goat_door, "car_door": car_door, "game_state": "offered_to_switch"})
+    # Ensure to modify the game state appropriately based on the game logic
 
-    elif user_input in ["yes", "no"] and st.session_state.game_state == "offered_to_switch":
-        if user_input == "yes":
-            chosen_door = next(door for door in [1, 2, 3] if door not in [st.session_state["chosen_door"], st.session_state["goat_door"]])
-        else:
-            chosen_door = st.session_state["chosen_door"]
-        game_response = "Congratulations! You've won the car!" if chosen_door == st.session_state["car_door"] else "Sorry, you've found a goat. Better luck next time!"
-        game_response += " The key strategy is to always switch, which statistically gives you a 2/3 chance of winning."
-        st.session_state.game_state = "game_over"
-
-    if game_response:
-        st.session_state.messages.append({"role": "Bunty", "content": game_response})
-    else:
-        # If the input doesn't match expected game responses, treat it as a general query
-        response = llm.predict(user_input)
-        st.session_state.messages.append({"role": "Bunty", "content": response})
+# Increment input_counter to clear the text_input after submission
+def increment_counter():
+    st.session_state.input_counter += 1
 
 # Display existing messages
 for message in st.session_state.messages:
-    st.text_area("", value=message["content"], height=100, key=f"{message['role']}_{st.session_state.messages.index(message)}", disabled=True)
+    role = "You:" if message["role"] == "user" else "Bunty:"
+    st.text_area(role, value=message["content"], height=100, key=f"{message['role']}_{st.session_state.messages.index(message)}", disabled=True)
 
-# User input and Send button
-user_input = st.text_input("Enter your message", key="user_input")
+# User input
+user_input = st.text_input("Enter your message", key=f"user_input_{st.session_state.input_counter}")
 
-if st.button("Send") and user_input:
+# When the user submits a message
+if st.button("Send", on_click=increment_counter) and user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     handle_message(user_input)
-    st.session_state.user_input = ""  # Attempt to clear the input box, might not clear due to Streamlit's behavior
-    st.experimental_rerun()
+
+# Note: No need to manually clear the input box or use st.experimental_rerun()
