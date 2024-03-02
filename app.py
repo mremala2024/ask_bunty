@@ -1,63 +1,40 @@
 import streamlit as st
-from streamlit_chat import message
-from streamlit_extras.colored_header import colored_header
-from streamlit_extras.add_vertical_space import add_vertical_space
-from hugchat import hugchat
+import os
+from langchain.llms import OpenAI
 
-st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
+# Assuming OPENAI_API_KEY is set as an environment variable for security reasons
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Sidebar contents
-with st.sidebar:
-    st.title('🤗💬 HugChat App')
-    st.markdown('''
-    ## About
-    This app is an LLM-powered chatbot built using:
-    - [Streamlit](https://streamlit.io/)
-    - [HugChat](https://github.com/Soulter/hugging-chat-api)
-    - [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model
-    
-    💡 Note: No API key required!
-    ''')
-    add_vertical_space(5)
-    st.write('Made with ❤️ by [Data Professor](https://youtube.com/dataprofessor)')
+if OPENAI_API_KEY is None:
+    st.error("OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.")
+    st.stop()
 
-# Generate empty lists for generated and past.
-## generated stores AI generated responses
-if 'generated' not in st.session_state:
-    st.session_state['generated'] = ["I'm HugChat, How may I help you?"]
-## past stores User's questions
-if 'past' not in st.session_state:
-    st.session_state['past'] = ['Hi!']
+llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
-# Layout of input/response containers
-input_container = st.container()
-colored_header(label='', description='', color_name='blue-30')
-response_container = st.container()
+st.title("Ask Bunty")
+
+# Initialize or update the session state for storing messages
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display existing messages
+for message in st.session_state.messages:
+    if message["role"] == "user":
+        st.text_area("You:", value=message["content"], height=100, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
+    else:
+        st.text_area("Bunty:", value=message["content"], height=100, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
 
 # User input
-## Function for taking user provided prompt as input
-def get_text():
-    input_text = st.text_input("You: ", "", key="input")
-    return input_text
-## Applying the user input box
-with input_container:
-    user_input = get_text()
+user_input = st.text_input("Enter your message", "")
 
-# Response output
-## Function for taking user prompt as input followed by producing AI generated responses
-def generate_response(prompt):
-    chatbot = hugchat.ChatBot()
-    response = chatbot.chat(prompt)
-    return response
+# When the user submits a message
+if st.button("Send") and user_input:
+    # Display user message
+    st.session_state.messages.append({"role": "user", "content": user_input})
 
-## Conditional display of AI generated responses as a function of user provided prompts
-with response_container:
-    if user_input:
-        response = generate_response(user_input)
-        st.session_state.past.append(user_input)
-        st.session_state.generated.append(response)
-        
-    if st.session_state['generated']:
-        for i in range(len(st.session_state['generated'])):
-            message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-            message(st.session_state["generated"][i], key=str(i))
+    # Generate and display response
+    response = llm.predict(user_input)
+    st.session_state.messages.append({"role": "Bunty", "content": response})
+
+    # Clear the input box after sending the message
+    st.experimental_rerun()
