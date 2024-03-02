@@ -1,52 +1,36 @@
 import os
 import streamlit as st
-import openai
+from langchain.llms import OpenAI
 
-# Retrieve the OpenAI API key and Assistant ID from environment variables directly
+# Load the OpenAI API key from an environment variable
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ASSISTANT_ID = os.getenv("ASSISTANT_ID")
 
-if not OPENAI_API_KEY or not ASSISTANT_ID:
-    raise ValueError("API key or Assistant ID not found. Please set OPENAI_API_KEY and ASSISTANT_ID environment variables.")
+if not OPENAI_API_KEY:
+    raise ValueError("No OpenAI API key found. Set the OPENAI_API_KEY environment variable.")
 
-# Initialize OpenAI API
-openai.api_key = OPENAI_API_KEY
+llm = OpenAI(openai_api_key=OPENAI_API_KEY)
 
-# Streamlit app setup
-st.title("ChatGPT Clone with Assistant ID")
+st.title("ChatGPT Clone")
 
-# Initialize session state for message history if it doesn't already exist
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
+with st.chat_message("assistant"):
+    st.write("Hello 👋")
+
 for message in st.session_state.messages:
-    with st.container():
-        st.write(f"{message['role'].title()}: {message['content']}")
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-# User input
-user_input = st.text_input("Enter your message:", key="user_input")
+prompt = st.chat_input("Enter your message")
 
-# Send button
-send_button = st.button("Send")
+if prompt:
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-if send_button and user_input:
-    # Append user message to chat history
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    
-    # Prepare messages for OpenAI Chat Completion
-    messages = [{"role": "user", "content": msg["content"]} for msg in st.session_state.messages if msg["role"] == "user"]
-    
-    # Call OpenAI API with Assistant ID (assuming GPT-3.5-turbo for example)
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages,
-        assistant_id=ASSISTANT_ID
-    )
-    
-    # Append assistant's response to chat history
-    if response.choices:
-        st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message["content"]})
+    response = llm.predict(prompt)
 
-# This line helps display the chat in a more conversational format
-st.experimental_rerun()
+    with st.chat_message("assistant"):
+        st.markdown(response)
+    st.session_state.messages.append({"role": "assistant", "content": response})
