@@ -1,9 +1,10 @@
 # .streamlit/config.toml
 
+
 [theme]
 base = "light"
-primaryColor = "#FF971C"  # Bright orange for primary actions
-backgroundColor = "#FFF899"  # Light yellow for background
-secondaryBackgroundColor = "#FFD36E"  # Soft orange for secondary backgrounds
-textColor = "#005F99"  # Deep sky blue for text
+primaryColor = "#e63946"  # Bright Red
+backgroundColor = "#f1faee"  # Honeydew
+secondaryBackgroundColor = "#a8dadc"  # Powder Blue
+textColor = "#1d3557"  # Dark Blue
 font = "sans serif"
