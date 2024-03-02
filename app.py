@@ -1,65 +1,63 @@
 import streamlit as st
-import random
-from langchain.llms import OpenAI
+from streamlit_chat import message
+from streamlit_extras.colored_header import colored_header
+from streamlit_extras.add_vertical_space import add_vertical_space
+from hugchat import hugchat
 
-# Assuming the OPENAI_API_KEY is securely set up in Streamlit's secrets or through another secure method
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
 
-llm = OpenAI(openai_api_key=OPENAI_API_KEY)
+# Sidebar contents
+with st.sidebar:
+    st.title('🤗💬 HugChat App')
+    st.markdown('''
+    ## About
+    This app is an LLM-powered chatbot built using:
+    - [Streamlit](https://streamlit.io/)
+    - [HugChat](https://github.com/Soulter/hugging-chat-api)
+    - [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model
+    
+    💡 Note: No API key required!
+    ''')
+    add_vertical_space(5)
+    st.write('Made with ❤️ by [Data Professor](https://youtube.com/dataprofessor)')
 
-st.title("Ask Bunty About the Monty Hall Game")
+# Generate empty lists for generated and past.
+## generated stores AI generated responses
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = ["I'm HugChat, How may I help you?"]
+## past stores User's questions
+if 'past' not in st.session_state:
+    st.session_state['past'] = ['Hi!']
 
-# Initialize or update the session state for storing messages and game state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    st.session_state.game_state = "init"
-
-# Function to handle user messages and generate responses
-def handle_message(user_input):
-    if st.session_state.game_state == "init":
-        st.session_state.messages.append({"role": "Bunty", "content": "Hello, I'm Bunty! Do you want to play the Monty Hall game? (Yes/No)"})
-        st.session_state.game_state = "waiting_for_game_start"
-    elif user_input.strip().lower() == "yes" and st.session_state.game_state == "waiting_for_game_start":
-        st.session_state.messages.append({"role": "Bunty", "content": "Great! Choose a door: 1, 2, or 3."})
-        st.session_state.game_state = "choosing_door"
-    elif user_input.strip().isdigit() and st.session_state.game_state == "choosing_door":
-        chosen_door = int(user_input)
-        car_door = random.randint(1, 3)
-        goat_door = next(door for door in [1, 2, 3] if door != chosen_door and door != car_door)
-        st.session_state.messages.append({"role": "Bunty", "content": f"Door {goat_door} has a goat behind it. Do you want to switch your choice? (Yes/No)"})
-        st.session_state['chosen_door'] = chosen_door
-        st.session_state['goat_door'] = goat_door
-        st.session_state['car_door'] = car_door
-        st.session_state.game_state = "offered_to_switch"
-    elif user_input.strip().lower() in ["yes", "no"] and st.session_state.game_state == "offered_to_switch":
-        if user_input.strip().lower() == "yes":
-            st.session_state['chosen_door'] = next(door for door in [1, 2, 3] if door != st.session_state['chosen_door'] and door != st.session_state['goat_door'])
-        if st.session_state['chosen_door'] == st.session_state['car_door']:
-            st.session_state.messages.append({"role": "Bunty", "content": "Congratulations! You've won the car!"})
-        else:
-            st.session_state.messages.append({"role": "Bunty", "content": "Sorry, you've found a goat. Better luck next time!"})
-        st.session_state.messages.append({"role": "Bunty", "content": "The key strategy is to always switch, which statistically gives you a 2/3 chance of winning."})
-        st.session_state.game_state = "game_over"
-    else:
-        # For non-game related questions or if game state doesn't match any known condition,
-        # use OpenAI to generate a response.
-        response = llm.predict(user_input)
-        st.session_state.messages.append({"role": "Bunty", "content": response})
-
-# Display existing messages with floating chat style
-for message in st.session_state.messages:
-    if message["role"] == "user":
-        st.text_area("You:", value=message["content"], height=50, key=f"user_{st.session_state.messages.index(message)}", disabled=True)
-    else:
-        st.text_area("Bunty:", value=message["content"], height=50, key=f"assistant_{st.session_state.messages.index(message)}", disabled=True)
+# Layout of input/response containers
+input_container = st.container()
+colored_header(label='', description='', color_name='blue-30')
+response_container = st.container()
 
 # User input
-user_input = st.text_input("Enter your message", "")
+## Function for taking user provided prompt as input
+def get_text():
+    input_text = st.text_input("You: ", "", key="input")
+    return input_text
+## Applying the user input box
+with input_container:
+    user_input = get_text()
 
-# When the user submits a message
-if st.button("Send") and user_input:
-    # Handle the user message
-    handle_message(user_input)
+# Response output
+## Function for taking user prompt as input followed by producing AI generated responses
+def generate_response(prompt):
+    chatbot = hugchat.ChatBot()
+    response = chatbot.chat(prompt)
+    return response
 
-    # Clear the input box after sending the message
-    st.experimental
+## Conditional display of AI generated responses as a function of user provided prompts
+with response_container:
+    if user_input:
+        response = generate_response(user_input)
+        st.session_state.past.append(user_input)
+        st.session_state.generated.append(response)
+        
+    if st.session_state['generated']:
+        for i in range(len(st.session_state['generated'])):
+            message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+            message(st.session_state["generated"][i], key=str(i))
